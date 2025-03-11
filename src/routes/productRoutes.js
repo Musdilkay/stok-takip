@@ -71,21 +71,29 @@ router.put("/sell/:id", async (req, res) => {
             return res.status(404).json({ message: "Ürün bulunamadı" });
         }
 
+        // Ana ürün stoğunu azalt
         product.stock -= quantity;
 
+        // Bağlı yan ürünlerin stoğunu azalt
         for (let linkedProduct of product.linkedProducts) {
-            const subProduct = await Product.findOne({ sku: linkedProduct.productId });
+            const subProduct = await Product.findById(linkedProduct.productId); // findById kullan!
+
             if (subProduct) {
                 subProduct.stock -= linkedProduct.amount * quantity;
                 await subProduct.save();
+                console.log(`Yan ürün (${subProduct.name}) stoğu güncellendi: ${subProduct.stock}`);
+            } else {
+                console.log(`Yan ürün bulunamadı: ${linkedProduct.productId}`);
             }
         }
 
         await product.save();
         res.json({ message: "Stok başarıyla güncellendi", product });
     } catch (error) {
+        console.error("Stok güncelleme hatası:", error);
         res.status(500).json({ message: "Stok güncellenemedi", error: error.message });
     }
 });
+
 
 export default router; // Burada 'default' olarak export ediyoruz
