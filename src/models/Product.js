@@ -1,16 +1,12 @@
 import mongoose from 'mongoose';
 
-const ProductSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    sku: { type: String, required: true, unique: true },
-    stock: { type: Number, required: true },
-    linkedProducts: [
-        {
-            productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
-            amount: { type: Number, required: true }
-        }
-    ]
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  sku: { type: String, required: true, unique: true },
+  stock: { type: Number, required: true, default: 0 },
+  linkedProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
 });
 
-const Product = mongoose.model("Product", ProductSchema);
-export default Product; // ES Modules için default export
+const Product = mongoose.model('Product', productSchema);
+
+export default Product;

@@ -62,6 +62,8 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Satış işlemi
+import StockTransaction from "../models/StockTransaction.js";
+
 router.put("/sell/:id", async (req, res) => {
     try {
         const { quantity } = req.body;
@@ -71,26 +73,38 @@ router.put("/sell/:id", async (req, res) => {
             return res.status(404).json({ message: "Ürün bulunamadı" });
         }
 
-        // Ana ürün stoğunu azalt
+        // Ana ürün stok güncelleme
         product.stock -= quantity;
 
-        // Bağlı yan ürünlerin stoğunu azalt
+        // Stok hareketi kaydı oluşturma
+        await StockTransaction.create({
+            productId: product._id,
+            quantity: quantity,
+            transactionType: "sale"
+        });
+
+        // Bağlı ürünlerin stoklarını da düşelim
         for (let linkedProduct of product.linkedProducts) {
-            const subProduct = await Product.findById(linkedProduct.productId); // findById kullan!
+            const subProduct = await Product.findOne({ _id: linkedProduct.productId });
 
             if (subProduct) {
                 subProduct.stock -= linkedProduct.amount * quantity;
+
+                // Bağlı ürünler için de stok hareketi kaydedelim
+                await StockTransaction.create({
+                    productId: subProduct._id,
+                    quantity: linkedProduct.amount * quantity,
+                    transactionType: "sale"
+                });
+
                 await subProduct.save();
-                console.log(`Yan ürün (${subProduct.name}) stoğu güncellendi: ${subProduct.stock}`);
-            } else {
-                console.log(`Yan ürün bulunamadı: ${linkedProduct.productId}`);
             }
         }
 
         await product.save();
         res.json({ message: "Stok başarıyla güncellendi", product });
+
     } catch (error) {
-        console.error("Stok güncelleme hatası:", error);
         res.status(500).json({ message: "Stok güncellenemedi", error: error.message });
     }
 });
