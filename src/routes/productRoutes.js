@@ -1,6 +1,7 @@
 import express from 'express';
 import Product from '../models/Product.js'; // 'Product' modelini ES Modules olarak import et
 import { sellProduct } from "../controllers/productController.js";
+import StockTransaction from "../models/StockTransaction.js";
 const router = express.Router();
 
 router.post("/sell", sellProduct);
@@ -62,7 +63,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Satış işlemi
-import StockTransaction from "../models/StockTransaction.js";
+
 
 router.put("/sell/:id", async (req, res) => {
     try {

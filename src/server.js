@@ -1,31 +1,36 @@
-import express from "express";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
-import cors from "cors";
-import fileUpload from "express-fileupload";
-import { admin, adminRouter } from "./admin.js";
-import productRoutes from "./routes/productRoutes.js";
-import transactionRoutes from "./routes/transactionRoutes.js";
+import express from 'express';
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import { admin, adminRouter } from './admin.js'; // AdminJS dosyanızı içe aktarın
+import transactionRoutes from './routes/transactionRoutes.js';
+import productRoutes from './routes/productRoutes.js';  // Ürünler için route ekleyelim
 
 dotenv.config();
+
+// MongoDB bağlantısı
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/stok-takip'; // Çevresel değişken kullanımı
+mongoose.connect(mongoUri, {
+  
+})
+  .then(() => console.log('MongoDB bağlantısı başarılı!'))
+  .catch((err) => console.error('MongoDB bağlantı hatası:', err));
+
 const app = express();
 
-app.use(express.json());
-app.use(cors());
-app.use(fileUpload()); // 📌 Dosya yükleme middleware'ini ekledik
-
-// AdminJS paneli için route
-app.use(admin.options.rootPath, adminRouter);
+// Middleware'ler
+app.use(express.json()); // JSON formatında veri alabilmek için
+app.use(express.urlencoded({ extended: true })); // URL encoded veri desteği için
 
 // API route'ları
-app.use("/api/products", productRoutes);
-app.use("/api/transactions", transactionRoutes);
+app.use("/api/transactions", transactionRoutes);  // İşlem rotası
+app.use("/api/products", productRoutes);          // Ürün rotası (Eğer varsa, ürünler için routes eklemelisiniz)
 
-const PORT = process.env.PORT || 5008;
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB Connected");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch((err) => console.log(err));
+// AdminJS rotasını ekle
+app.use(admin.options.rootPath, adminRouter);
+
+// Sunucuyu başlat
+const PORT = process.env.PORT || 5008;  // Çevresel değişken ile port seçimi
+app.listen(PORT, () => {
+  console.log(`Sunucu http://localhost:${PORT} adresinde çalışıyor.`);
+  console.log(`AdminJS paneli: http://localhost:${PORT}/admin`);
+});
