@@ -6,6 +6,7 @@ import { admin, adminRouter } from "./admin.js";
 import transactionRoutes from "./routes/transactionRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js"; // 📌 Sipariş rotaları eklendi
 
 dotenv.config();
 
@@ -19,9 +20,7 @@ app.use(express.urlencoded({ extended: true })); // URL encoded veri desteği i�
 // 📌 MongoDB Bağlantısı
 const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/stok-takip";
 mongoose
-  .connect(mongoUri, {
-   
-  })
+  .connect(mongoUri, {})
   .then(() => console.log("✅ MongoDB bağlantısı başarılı!"))
   .catch((err) => console.error("❌ MongoDB bağlantı hatası:", err));
 
@@ -29,6 +28,7 @@ mongoose
 app.use("/api/auth", authRoutes); // Kullanıcı yetkilendirme
 app.use("/api/transactions", transactionRoutes); // İşlem rotası
 app.use("/api/products", productRoutes); // Ürün rotası
+app.use("/api/orders", orderRoutes); // 📌 Sipariş rotaları eklendi 🚀
 
 // 📌 AdminJS Paneli
 app.use(admin.options.rootPath, adminRouter);
