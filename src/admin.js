@@ -12,6 +12,7 @@ AdminJS.registerAdapter(AdminJSMongoose);
 const app = express();
 app.use(fileUpload());
 
+// AdminJS panel ayarları
 const admin = new AdminJS({
   resources: [
     {
@@ -27,25 +28,50 @@ const admin = new AdminJS({
             handler: async (request, response, context) => {
               if (request.method === "post") {
                 const { file } = request.payload;
+
+                // Dosya kontrolü
                 if (!file) {
                   return { message: "Lütfen bir dosya yükleyin!", status: "error" };
                 }
 
-                // Excel dosyasını işle
+                // Excel dosyasını okuyalım
                 const workbook = xlsx.read(file.buffer, { type: "buffer" });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 const data = xlsx.utils.sheet_to_json(sheet);
 
+                // Her satır için stok güncellemesi yapalım
+                const updatedProducts = [];
                 for (const row of data) {
                   const productId = row.productId;
                   const stock = row.stock;
-                  await Product.updateOne({ _id: productId }, { $set: { stock: stock } });
+
+                  // Geçerli bir ürün var mı kontrol et
+                  const product = await Product.findById(productId);
+                  if (product) {
+                    // Stok güncelleme işlemi
+                    product.stock = stock;
+                    await product.save();
+
+                    // Güncellenen ürünleri sakla
+                    updatedProducts.push(product);
+                  } else {
+                    // Ürün bulunamazsa hata mesajı
+                    return {
+                      message: `Ürün bulunamadı: ${productId}`,
+                      status: "error",
+                    };
+                  }
                 }
 
-                return { message: "Stoklar başarıyla güncellendi!", status: "success" };
+                // Stok güncellemeleri başarılı
+                return {
+                  message: `${updatedProducts.length} ürün başarıyla güncellendi!`,
+                  status: "success",
+                };
               }
 
+              // Dosya yükleme formu göstermek için
               return {
                 message: "Dosyayı yükleyerek stokları güncelleyebilirsiniz.",
                 status: "info",
@@ -60,5 +86,7 @@ const admin = new AdminJS({
   rootPath: "/admin",
 });
 
+// AdminJS router
 const adminRouter = AdminJSExpress.buildRouter(admin);
+
 export { admin, adminRouter };
