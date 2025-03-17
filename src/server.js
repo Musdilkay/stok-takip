@@ -6,11 +6,12 @@ import { admin, adminRouter } from './admin.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
-import orderRoutes from './routes/orderRoutes.js'; 
+import orderRoutes from './routes/orderRoutes.js';
 import pdfkit from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import StockTransaction from './models/StockTransaction.js';
+import { checkLowStock } from './utils/notifications.js';
 
 dotenv.config();
 
@@ -22,17 +23,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // MongoDB Bağlantısı
-const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/stok-takip";
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/stok-takip';
 mongoose
   .connect(mongoUri, {})
-  .then(() => console.log("✅ MongoDB bağlantısı başarılı!"))
-  .catch((err) => console.error("❌ MongoDB bağlantı hatası:", err));
+  .then(() => console.log('✅ MongoDB bağlantısı başarılı!'))
+  .catch((err) => console.error('❌ MongoDB bağlantı hatası:', err));
 
 // API Route'ları
-app.use("/api/auth", authRoutes);
-app.use("/api/transactions", transactionRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+
+// Her saat başı düşük stokları kontrol etme
+setInterval(checkLowStock, 3600000);
 
 // PDF Raporu Oluşturma
 app.get('/api/report/pdf', async (req, res) => {
@@ -45,7 +49,7 @@ app.get('/api/report/pdf', async (req, res) => {
     });
 
     if (!transactions.length) {
-      return res.status(404).json({ message: "Veri bulunamadı!" });
+      return res.status(404).json({ message: 'Veri bulunamadı!' });
     }
 
     // PDF oluşturma
@@ -76,7 +80,7 @@ app.get('/api/report/pdf', async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Rapor oluşturulamadı!" });
+    res.status(500).json({ message: 'Rapor oluşturulamadı!' });
   }
 });
 
@@ -85,8 +89,8 @@ app.use(admin.options.rootPath, adminRouter);
 
 // Hata Yönetimi Middleware'i
 app.use((err, req, res, next) => {
-  console.error("Hata:", err);
-  res.status(500).json({ message: "Sunucu hatası!", error: err.message });
+  console.error('Hata:', err);
+  res.status(500).json({ message: 'Sunucu hatası!', error: err.message });
 });
 
 // Sunucuyu Başlat
