@@ -6,7 +6,6 @@ import fileUpload from "express-fileupload";
 import xlsx from "xlsx";
 import session from "express-session";  // 🛠 Oturum yönetimi için eklendi
 import bcrypt from "bcryptjs";
-
 import Product from "./models/Product.js";
 import StockTransaction from "./models/StockTransaction.js";
 import Notification from "./models/Notification.js";
@@ -101,11 +100,18 @@ const admin = new AdminJS({
       options: {
         parent: { name: "Kullanıcı Yönetimi" },
         listProperties: ["username", "email", "role"],
-        editProperties: ["role"], // Sadece rol değiştirilebilir
+        editProperties: ["role", "password"], // ✅ Şifreyi admin değiştirebilir hale getirdik
         showProperties: ["username", "email", "role"],
         actions: {
-          list: { before: adminOnlyMiddleware }, // ✅ Admin yetkisi kontrolü düzeltildi
-          edit: { before: adminOnlyMiddleware },
+          edit: {
+            before: async (request) => {
+              if (request.payload.password) {
+                request.payload.password = await bcrypt.hash(request.payload.password, 10); // ✅ Şifreyi hashle
+              }
+              return request;
+            },
+          },
+          list: { before: adminOnlyMiddleware },
           delete: { before: adminOnlyMiddleware },
           new: { isAccessible: false },
         },
