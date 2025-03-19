@@ -1,34 +1,59 @@
-// authRoutes.js içinde login işlemi örneği
 import express from 'express';
-import User from '../models/User.js';
+import User from '../models/User.js';  // Kullanıcı modelini içe aktar
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// Kullanıcı kaydı
+router.post('/register', async (req, res) => {
+  const { username, email, password, role } = req.body;
 
-    // Kullanıcıyı bul
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "Kullanıcı bulunamadı!" });
+  try {
+    const userExists = await User.findOne({ email });
+
+    if (userExists) {
+      return res.status(400).json({ message: "Bu e-posta adresi zaten kullanılıyor!" });
     }
 
-    // Şifreyi kontrol et
-    const isMatch = await bcrypt.compare(password, user.password);
+    const user = new User({
+      username,
+      email,
+      password,
+      role,
+    });
+
+    await user.save();
+    res.status(201).json({ message: "Kullanıcı başarıyla kaydedildi!" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Kullanıcı kaydedilemedi." });
+  }
+});
+
+// Kullanıcı girişi (JWT ile token oluşturma)
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "Kullanıcı bulunamadı!" });
+    }
+
+    const isMatch = await user.matchPassword(password);
+
     if (!isMatch) {
       return res.status(400).json({ message: "Geçersiz şifre!" });
     }
 
-    // JWT token oluştur
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(200).json({ message: "Giriş başarılı!", token });
-    
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({ token });
   } catch (error) {
-    console.error(error);  // Hata mesajını terminale yaz
-    res.status(500).json({ message: "Sunucu hatası!", error });
+    console.error(error);
+    res.status(500).json({ message: "Bir hata oluştu!" });
   }
 });
 

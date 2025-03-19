@@ -17,17 +17,20 @@ dotenv.config();
 
 const app = express();
 
-// Middleware'ler
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 // MongoDB Bağlantısı
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/stok-takip';
 mongoose
   .connect(mongoUri, {})
   .then(() => console.log('✅ MongoDB bağlantısı başarılı!'))
   .catch((err) => console.error('❌ MongoDB bağlantı hatası:', err));
+
+// AdminJS Paneli'ni öncelikli olarak ekleyelim
+app.use(admin.options.rootPath, adminRouter);
+
+// Middleware'ler
+app.use(cors());
+app.use(express.json()); // Express'in yerleşik JSON parser'ı
+app.use(express.urlencoded({ extended: true })); // URL encoded veriler için
 
 // API Route'ları
 app.use('/api/auth', authRoutes);
@@ -54,7 +57,13 @@ app.get('/api/report/pdf', async (req, res) => {
 
     // PDF oluşturma
     const doc = new pdfkit();
-    const filePath = path.join(__dirname, 'reports', 'stock_report.pdf');
+    const filePath = path.resolve(__dirname, 'reports', 'stock_report.pdf');
+
+    // Klasör oluştur (eğer yoksa)
+    if (!fs.existsSync(path.dirname(filePath))) {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    }
+
     doc.pipe(fs.createWriteStream(filePath));
 
     doc.fontSize(20).text(`Stok Raporu (${startDate} - ${endDate})`, { align: 'center' });
@@ -84,12 +93,9 @@ app.get('/api/report/pdf', async (req, res) => {
   }
 });
 
-// AdminJS Paneli
-app.use(admin.options.rootPath, adminRouter);
-
 // Hata Yönetimi Middleware'i
 app.use((err, req, res, next) => {
-  console.error('Hata:', err);
+  console.error('🚨 Sunucu hatası:', err);
   res.status(500).json({ message: 'Sunucu hatası!', error: err.message });
 });
 

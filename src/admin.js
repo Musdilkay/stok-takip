@@ -4,10 +4,14 @@ import * as AdminJSMongoose from "@adminjs/mongoose";
 import express from "express";
 import fileUpload from "express-fileupload";
 import xlsx from "xlsx";
+import session from "express-session";  // 🛠 Oturum yönetimi için eklendi
+import bcrypt from "bcryptjs";
 
 import Product from "./models/Product.js";
 import StockTransaction from "./models/StockTransaction.js";
 import Notification from "./models/Notification.js";
+import User from "./models/User.js";
+import { adminOnlyMiddleware } from "./middlewares/authMiddleware.js"; // ✅ Admin yetkilendirme middleware'i
 
 AdminJS.registerAdapter(AdminJSMongoose);
 
@@ -50,7 +54,7 @@ const admin = new AdminJS({
                     updatedProducts.push(product);
 
                     await Notification.create({
-                      message: `Ürünün stok güncellendi: ${product.name}`,
+                      message: `Ürünün stoğu güncellendi: ${product.name}`,
                       type: "stockUpdate",
                     });
                   } else {
@@ -92,10 +96,51 @@ const admin = new AdminJS({
         },
       },
     },
+    {
+      resource: User,
+      options: {
+        parent: { name: "Kullanıcı Yönetimi" },
+        listProperties: ["username", "email", "role"],
+        editProperties: ["role"], // Sadece rol değiştirilebilir
+        showProperties: ["username", "email", "role"],
+        actions: {
+          list: { before: adminOnlyMiddleware }, // ✅ Admin yetkisi kontrolü düzeltildi
+          edit: { before: adminOnlyMiddleware },
+          delete: { before: adminOnlyMiddleware },
+          new: { isAccessible: false },
+        },
+      },
+    },
   ],
   rootPath: "/admin",
 });
 
-const adminRouter = AdminJSExpress.buildRouter(admin);
+// 📌 **Admin Oturum Açma (Login) İçin Fonksiyon**
+const authenticateAdmin = async (email, password) => {
+  const adminUser = await User.findOne({ email, role: "admin" });
+  if (adminUser && bcrypt.compareSync(password, adminUser.password)) {
+    return adminUser;
+  }
+  return null;
+};
 
-export { admin, adminRouter }; // Burada dışa aktarım ekledik
+// 📌 **AdminJS Router'ını Oturum Yönetimi ile Kuruyoruz**
+const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
+  admin,
+  {
+    authenticate: async (email, password) => {
+      return await authenticateAdmin(email, password);
+    },
+    cookieName: "admin-session",
+    cookiePassword: "supersecret-password",
+  },
+  null,
+  {
+    resave: false,
+    saveUninitialized: true,
+    secret: "session-secret-key",
+    store: new session.MemoryStore(),
+  }
+);
+
+export { admin, adminRouter };
