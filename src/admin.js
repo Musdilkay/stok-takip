@@ -16,6 +16,40 @@ AdminJS.registerAdapter(AdminJSMongoose);
 
 const app = express();
 app.use(fileUpload());
+app.use(express.static("src/public")); // ✅ Statik dosya desteği eklendi (logo için)
+
+// ✅ Tema (başlangıçta dark mode kapalı)
+let isDarkMode = true; // Başlangıçta dark mode açık olsun
+
+// ✅ Tema fonksiyonu
+const getTheme = () => {
+  return {
+    colors: {
+      primary100: isDarkMode ? "#1e1e1e" : "#ffffff",  // Arka plan rengi
+      primary80: isDarkMode ? "#282828" : "#f0f0f0",
+      primary60: isDarkMode ? "#3a3a3a" : "#d0d0d0",
+      primary40: isDarkMode ? "#4b4b4b" : "#b0b0b0",
+      primary20: isDarkMode ? "#5c5c5c" : "#909090",
+      grey100: isDarkMode ? "#ffffff" : "#121212", // Yazılar beyaz
+      grey80: isDarkMode ? "#d1d1d1" : "#000000",
+      grey60: isDarkMode ? "#b0b0b0" : "#333333",
+      grey40: isDarkMode ? "#8c8c8c" : "#444444",
+      grey20: isDarkMode ? "#6b6b6b" : "#555555",
+      grey0: isDarkMode ? "#3a3a3a" : "#666666",
+      white: "#121212",  // Arka plan tamamen koyu
+      accent: "#ff9800", // Vurgulu renk
+      hoverBg: isDarkMode ? "#333333" : "#e0e0e0", // Üzerine gelince değişen arka plan
+      inputBg: isDarkMode ? "#222222" : "#f5f5f5", // Input arka planını koyulaştır
+      inputBorder: isDarkMode ? "#444444" : "#cccccc", // Input kenar rengini koyu yap
+      inputColor: isDarkMode ? "#ffffff" : "#000000", // Input içindeki yazıları beyaz yap
+      buttonBg: isDarkMode ? "#444444" : "#e0e0e0", // Butonların arka planını koyu yap
+      buttonColor: "#ffffff", // Buton yazıları beyaz
+    },
+    fonts: {
+      base: "'Roboto', sans-serif",
+    },
+  };
+};
 
 const admin = new AdminJS({
   resources: [
@@ -119,6 +153,26 @@ const admin = new AdminJS({
     },
   ],
   rootPath: "/admin",
+  branding: {
+    companyName: "Stok Takip Sistemi",
+    logo: "/e-takip.png", // ✅ Logo eklendi (public içindeki logo)
+    theme: getTheme(), // ✅ Tema burada kullanıldı
+    features: [
+      {
+        name: "darkModeToggle",
+        label: "Dark Mode",
+        action: {
+          name: "toggleDarkMode",
+          actionType: "resource",
+          handler: (req, res) => {
+            // Tema değişikliğini burada yap
+            isDarkMode = !isDarkMode; // Dark mode geçişini kontrol et
+            res.redirect("/admin"); // Yeniden yükle
+          },
+        },
+      },
+    ],
+  },
 });
 
 // 📌 **Admin Oturum Açma (Login) İçin Fonksiyon**

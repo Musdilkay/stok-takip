@@ -31,6 +31,8 @@ app.use(admin.options.rootPath, adminRouter);
 app.use(cors());
 app.use(express.json()); // Express'in yerleşik JSON parser'ı
 app.use(express.urlencoded({ extended: true })); // URL encoded veriler için
+app.use(express.static(path.join(process.cwd(), "src/public")));
+
 
 // API Route'ları
 app.use('/api/auth', authRoutes);
@@ -92,6 +94,12 @@ app.get('/api/report/pdf', async (req, res) => {
     res.status(500).json({ message: 'Rapor oluşturulamadı!' });
   }
 });
+
+app.post("/admin/toggle-dark-mode", (req, res) => {
+  isDarkMode = !isDarkMode; // Dark mode değiştir
+  res.json({ success: true, isDarkMode });
+});
+
 
 // Hata Yönetimi Middleware'i
 app.use((err, req, res, next) => {
