@@ -1,9 +1,14 @@
 import mongoose from "mongoose";
 
-const notificationSchema = new mongoose.Schema({
-    message: { type:String, required: true },
-    type: {type: String, enum:["lockStock", "newOrder"], required: true},
+const NotificationSchema = new mongoose.Schema(
+  {
+    message: { type: String, required: true },
+    type: { type: String, enum: ["stockUpdate", "order", "other"], required: true },
+    isRead: { type: Boolean, default: false }, // ✅ Bildirimin okunup okunmadığını takip edelim
     createdAt: { type: Date, default: Date.now },
-});
+  },
+  { timestamps: true }
+);
 
-export default mongoose.model("Notification", notificationSchema);
+const Notification = mongoose.model("Notification", NotificationSchema);
+export default Notification;

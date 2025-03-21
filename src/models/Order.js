@@ -1,11 +1,12 @@
 import mongoose from "mongoose";
+import Notification from "./Notification.js"; // Bildirim Modeli Eklendi
 
 const OrderSchema = new mongoose.Schema(
   {
-    customerName: { type: String, required: true },      // Müşteri Adı
-    customerEmail: { type: String, required: true },     // Müşteri E-posta
-    customerPhone: { type: String, required: true },     // Telefon Numarası
-    customerAddress: { type: String, required: true },   // Adres
+    customerName: { type: String, required: true },
+    customerEmail: { type: String, required: true },
+    customerPhone: { type: String, required: true },
+    customerAddress: { type: String, required: true },
 
     products: [
       {
@@ -24,6 +25,24 @@ const OrderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// 🔔 **Yeni sipariş oluşturulduğunda bildirim ekleyelim**
+OrderSchema.post("save", async function (doc) {
+  try {
+    console.log("🛎️ Yeni sipariş bildirimi oluşturuluyor...");
+    
+    const newNotification = new Notification({
+      message: `📦 Yeni sipariş var: ${doc.customerName} (${doc.totalPrice} TL)`,
+      type: "order",
+    });
+
+    await newNotification.save();
+    console.log("✅ Bildirim başarıyla kaydedildi!");
+
+  } catch (error) {
+    console.error("❌ Bildirim eklenirken hata oluştu:", error);
+  }
+});
 
 const Order = mongoose.model("Order", OrderSchema);
 export default Order;

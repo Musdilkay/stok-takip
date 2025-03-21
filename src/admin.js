@@ -121,14 +121,16 @@ const admin = new AdminJS({
       resource: Notification,
       options: {
         parent: { name: "Bildirimler" },
-        listProperties: ["message", "type", "createdAt"],
+        listProperties: ["message", "type", "createdAt"], // 🔹 "isRead" olmadan deneyelim
+        showProperties: ["message", "type", "createdAt"],
         actions: {
           new: { isAccessible: false },
           edit: { isAccessible: false },
-          delete: { isAccessible: false },
+          delete: { isAccessible: true },
         },
       },
     },
+    
     {
       resource: User,
       options: {
