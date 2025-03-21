@@ -1,37 +1,29 @@
 import mongoose from "mongoose";
 
-const orderSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",  // Kullanıcı modeline referans
-    required: true,
-  },
-  products: [{
-    productId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",  // Ürün modeline referans
-      required: true,
-    },
-    quantity: {
-      type: Number,
-      required: true,
-    },
-  }],
-  totalAmount: {
-    type: Number,
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ["pending", "completed", "cancelled"], // Sipariş durumu
-    default: "pending",
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+const OrderSchema = new mongoose.Schema(
+  {
+    customerName: { type: String, required: true },      // Müşteri Adı
+    customerEmail: { type: String, required: true },     // Müşteri E-posta
+    customerPhone: { type: String, required: true },     // Telefon Numarası
+    customerAddress: { type: String, required: true },   // Adres
 
-const Order = mongoose.model("Order", orderSchema);
+    products: [
+      {
+        product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+        quantity: { type: Number, required: true },
+        price: { type: Number, required: true },
+      },
+    ],
+    totalPrice: { type: Number, required: true },
+    status: {
+      type: String,
+      enum: ["Beklemede", "Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"],
+      default: "Beklemede",
+    },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+);
 
+const Order = mongoose.model("Order", OrderSchema);
 export default Order;

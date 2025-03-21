@@ -10,6 +10,8 @@ import Product from "./models/Product.js";
 import StockTransaction from "./models/StockTransaction.js";
 import Notification from "./models/Notification.js";
 import User from "./models/User.js";
+import Order from "./models/Order.js";  // Sipariş Modeli
+import Customer from "./models/customer.js";  // Müşteri Modeli
 import { adminOnlyMiddleware } from "./middlewares/authMiddleware.js";
 
 AdminJS.registerAdapter(AdminJSMongoose);
@@ -23,25 +25,25 @@ let isDarkMode = true;
 const getTheme = () => {
   return {
     colors: {
-      primary100: isDarkMode ? "#1e1e1e" : "#ffffff", // Arka plan koyu renk
-      primary80: isDarkMode ? "#282828" : "#f0f0f0",  // İkinci seviye arka plan
+      primary100: isDarkMode ? "#1e1e1e" : "#ffffff",
+      primary80: isDarkMode ? "#282828" : "#f0f0f0",
       primary60: isDarkMode ? "#3a3a3a" : "#d0d0d0",
       primary40: isDarkMode ? "#4b4b4b" : "#b0b0b0",
       primary20: isDarkMode ? "#5c5c5c" : "#909090",
-      grey100: "#000000",  // Yazılar beyaz
+      grey100: "#000000",
       grey80: "#000000",
       grey60: "#000000",
       grey40: "#000000",
       grey20: "#000000",
       grey0: "#000000",
-      white: isDarkMode ? "#121212" : "#ffffff", // Arka plan beyaz
-      accent: "#ff9800", // Vurgulama rengi
+      white: isDarkMode ? "#121212" : "#ffffff",
+      accent: "#ff9800",
       hoverBg: isDarkMode ? "#333333" : "#e0e0e0",
-      inputBg: isDarkMode ? "#222222" : "#f5f5f5", // Input arka planı
-      inputBorder: isDarkMode ? "#444444" : "#cccccc", // Input kenar rengi
-      inputColor: "#000000", // Input içindeki yazılar siyah
-      buttonBg: isDarkMode ? "#444444" : "#e0e0e0", // Butonlar
-      buttonColor: "#000000", // Buton yazıları siyah
+      inputBg: isDarkMode ? "#222222" : "#f5f5f5",
+      inputBorder: isDarkMode ? "#444444" : "#cccccc",
+      inputColor: "#000000",
+      buttonBg: isDarkMode ? "#444444" : "#e0e0e0",
+      buttonColor: "#000000",
     },
     fonts: {
       base: "'Roboto', sans-serif",
@@ -146,6 +148,42 @@ const admin = new AdminJS({
           list: { before: adminOnlyMiddleware },
           delete: { before: adminOnlyMiddleware },
           new: { isAccessible: false },
+        },
+      },
+    },
+    {
+      resource: Order, // 🛒 Sipariş Yönetimi
+      options: {
+        parent: { name: "Sipariş Yönetimi" },
+        listProperties: ["customerName", "customerPhone", "totalPrice", "status", "createdAt"],
+        editProperties: ["status"],
+        showProperties: [
+          "customerName",
+          "customerEmail",
+          "customerPhone",
+          "customerAddress",
+          "totalPrice",
+          "status",
+          "createdAt"
+        ],
+        actions: {
+          edit: { isAccessible: true },
+          delete: { isAccessible: false },
+          new: { isAccessible: true },
+        },
+      },
+    },
+    {
+      resource: Customer, // Müşteri Yönetimi
+      options: {
+        parent: { name: "Müşteri Yönetimi" },
+        listProperties: ["name", "email", "phoneNumber", "address"],
+        editProperties: ["name", "email", "phoneNumber", "address"],
+        showProperties: ["name", "email", "phoneNumber", "address"],
+        actions: {
+          edit: { isAccessible: true },
+          delete: { isAccessible: false },
+          new: { isAccessible: true },
         },
       },
     },
