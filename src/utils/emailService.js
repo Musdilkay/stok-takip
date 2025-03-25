@@ -5,8 +5,8 @@ import nodemailer from "nodemailer";
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: "mailiniz",
-        pass: "şifreniz" 
+        user: "musdilkay1@gmail.com",
+        pass: "zgvp unom bfon xvbb" 
     }
 });
 
@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 export const sendOrderReport = async (to, reportBuffer) => {
     try {
         const mailOptions = {
-            from : "mailiniz",
+            from : "ilkaymustafa07@gmail.com",
             to,
             subject: "Günlük Sipariş Raporu",
             text: "Ekli dosyada sipariş raporunuz bulunmamaktadır",
@@ -30,7 +30,7 @@ export const sendOrderReport = async (to, reportBuffer) => {
         console.log("Rapor başarıyla gönderildi");
         return { success: true, message: "E-posta başarıyla gönderildi."};
     } catch (error) {
-        console.error("E-posta göndermre hatası:", error);
+        console.error("E-posta gönderme hatası:", error);
         return { success: false, message: "E-posta gönderilemedi"};
     }
 };

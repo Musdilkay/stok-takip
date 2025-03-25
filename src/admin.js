@@ -8,6 +8,7 @@ import session from "express-session";
 import bcrypt from "bcryptjs";
 import Product from "./models/Product.js";
 import StockTransaction from "./models/StockTransaction.js";
+import StockLog from "./models/StockLog.js";
 import Notification from "./models/Notification.js";
 import User from "./models/User.js";
 import Order from "./models/Order.js";
@@ -15,6 +16,7 @@ import Customer from "./models/customer.js";
 import { adminOnlyMiddleware } from "./middlewares/authMiddleware.js";
 import { sendOrderReport } from "./utils/emailService.js";
 import { generateOrderReport } from "./utils/orderReport.js";
+
 AdminJS.registerAdapter(AdminJSMongoose);
 
 const app = express();
@@ -46,10 +48,9 @@ const getTheme = () => {
       inputBorder: isDarkMode ? "#666666" : "#cccccc",
       inputColor: isDarkMode ? "#ffffff" : "#000000",
 
-      // ✅ **Tamamen Yenilenen Buton Renkleri**
-      buttonBg: isDarkMode ? "#ff4500" : "#0044cc", // Karanlık modda turuncu-kırmızı, açık modda koyu mavi
-      buttonColor: isDarkMode ? "#ffffff" : "#ffffff", // Her iki modda da beyaz yazı
-      buttonHoverBg: isDarkMode ? "#ff2200" : "#0033aa", // Hover efekti için daha koyu ton
+      buttonBg: isDarkMode ? "#ff4500" : "#0044cc",
+      buttonColor: isDarkMode ? "#ffffff" : "#ffffff",
+      buttonHoverBg: isDarkMode ? "#ff2200" : "#0033aa",
     },
     fonts: {
       base: "'Roboto', sans-serif",
@@ -76,6 +77,8 @@ const admin = new AdminJS({
                   return { message: "Lütfen bir dosya yükleyin!", status: "error" };
                 }
 
+                
+
                 const workbook = xlsx.read(file.buffer, { type: "buffer" });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
@@ -84,13 +87,24 @@ const admin = new AdminJS({
                 const updatedProducts = [];
                 for (const row of data) {
                   const productId = row.productId;
-                  const stock = row.stock;
+                  const newStock = row.stock;
                   const product = await Product.findById(productId);
 
                   if (product) {
-                    product.stock = stock;
+                    const oldStock = product.stock;
+
+                    product.stock = newStock;
                     await product.save();
                     updatedProducts.push(product);
+
+                    await StockLog.create({
+                      product: product._id,
+                      changedBy: context.currentAdmin._id,
+                      oldStock,
+                      newStock,
+                      changeAmount: newStock - oldStock,
+                      actionType: "manual",
+                    });
 
                     await Notification.create({
                       message: `Ürünün stoğu güncellendi: ${product.name}`,
@@ -103,8 +117,6 @@ const admin = new AdminJS({
                     };
                   }
                 }
-
-                
 
                 return {
                   message: `${updatedProducts.length} ürün başarıyla güncellendi!`,
@@ -125,7 +137,6 @@ const admin = new AdminJS({
       resource: StockTransaction,
       options: { parent: { name: "Stok Hareketleri" } },
     },
-
     {
       resource: Notification,
       options: {
@@ -139,7 +150,6 @@ const admin = new AdminJS({
         },
       },
     },
-
     {
       resource: User,
       options: {
@@ -216,7 +226,7 @@ const admin = new AdminJS({
     logo: "/e-takip.png",
     theme: getTheme(),
     assets: {
-      styles: ["/admin-style.css"], // 📌 Dark mode CSS dosyamız yüklendi!
+      styles: ["/admin-style.css"],
     },
   },
 });
@@ -244,8 +254,22 @@ const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
     saveUninitialized: true,
     secret: "session-secret-key",
     store: new session.MemoryStore(),
-  }
+  },
+
   
+{
+  resource: StockLog,
+  options: {
+    parent: { name: "Stok Hareketleri" },
+    listProperties: ["product", "changedBy", "oldStock", "newStock", "changeAmount", "actionType", "createdAt"],
+    showProperties: ["product", "changedBy", "oldStock", "newStock", "changeAmount", "actionType", "createdAt"],
+    actions: {
+      new: { isAccessible: false }, // Manuel eklenemez
+      edit: { isAccessible: false }, // Düzenlenemez
+      delete: { isAccessible: false }, // Silinemez
+    },
+  },
+}
 );
 
 export { admin, adminRouter };
