@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .dashboard-container {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .stats-box {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      width: 30%;
+    }
+    .stats-box h2 {
+      color: #ff9800;
+      text-align: center;
+    }
+    .stats-box p {
+      font-size: 18px;
+      text-align: center;
+      font-weight: bold;
+      color: #333;
+    }
+    .orders-box {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hoş Geldiniz, Admin</h1>
+
+  <div class="dashboard-container">
+    <div class="stats-box">
+      <h2>Toplam Ürün</h2>
+      <p id="totalProducts">0</p>
+    </div>
+    <div class="stats-box">
+      <h2>Toplam Sipariş</h2>
+      <p id="totalOrders">0</p>
+    </div>
+    <div class="stats-box">
+      <h2>Toplam Kullanıcı</h2>
+      <p id="totalUsers">0</p>
+    </div>
+  </div>
+
+  <div class="orders-box">
+    <h2>Son 5 Sipariş</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Müşteri</th>
+          <th>Toplam</th>
+          <th>Durum</th>
+          <th>Tarih</th>
+        </tr>
+      </thead>
+      <tbody id="ordersTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+    fetch("/admin/api/dashboard")
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById("totalProducts").innerText = data.stats[0].value;
+        document.getElementById("totalOrders").innerText = data.stats[1].value;
+        document.getElementById("totalUsers").innerText = data.stats[2].value;
+
+        const ordersTable = document.getElementById("ordersTable");
+        data.latestOrders.forEach(order => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${order.müşteri}</td>
+            <td>${order.toplam}</td>
+            <td>${order.durum}</td>
+            <td>${order.tarih}</td>
+          `;
+          ordersTable.appendChild(row);
+        });
+      })
+      .catch(error => console.error("Hata:", error));
+  </script>
+</body>
+</html>
+"

@@ -10,15 +10,16 @@ import Product from "./models/Product.js";
 import StockTransaction from "./models/StockTransaction.js";
 import Notification from "./models/Notification.js";
 import User from "./models/User.js";
-import Order from "./models/Order.js";  // Sipariş Modeli
-import Customer from "./models/customer.js";  // Müşteri Modeli
+import Order from "./models/Order.js";
+import Customer from "./models/customer.js";
 import { adminOnlyMiddleware } from "./middlewares/authMiddleware.js";
-
+import { sendOrderReport } from "./utils/emailService.js";
+import { generateOrderReport } from "./utils/orderReport.js";
 AdminJS.registerAdapter(AdminJSMongoose);
 
 const app = express();
 app.use(fileUpload());
-app.use(express.static("src/public"));
+app.use(express.static("src/public"));  // 📌 Statik klasör tanımlandı
 
 let isDarkMode = true;
 
@@ -26,24 +27,29 @@ const getTheme = () => {
   return {
     colors: {
       primary100: isDarkMode ? "#1e1e1e" : "#ffffff",
-      primary80: isDarkMode ? "#282828" : "#f0f0f0",
-      primary60: isDarkMode ? "#3a3a3a" : "#d0d0d0",
-      primary40: isDarkMode ? "#4b4b4b" : "#b0b0b0",
-      primary20: isDarkMode ? "#5c5c5c" : "#909090",
-      grey100: "#000000",
-      grey80: "#000000",
-      grey60: "#000000",
-      grey40: "#000000",
-      grey20: "#000000",
-      grey0: "#000000",
-      white: isDarkMode ? "#121212" : "#ffffff",
+      primary80: isDarkMode ? "#303030" : "#f5f5f5",
+      primary60: isDarkMode ? "#4a4a4a" : "#dcdcdc",
+      primary40: isDarkMode ? "#626262" : "#b0b0b0",
+      primary20: isDarkMode ? "#7a7a7a" : "#909090",
+
+      grey100: isDarkMode ? "#444444" : "#333333",
+      grey80: isDarkMode ? "#666666" : "#4d4d4d",
+      grey60: isDarkMode ? "#888888" : "#666666",
+      grey40: isDarkMode ? "#aaaaaa" : "#999999",
+      grey20: isDarkMode ? "#cccccc" : "#bbbbbb",
+      grey0: isDarkMode ? "#eeeeee" : "#dddddd",
+
+      white: isDarkMode ? "#181818" : "#ffffff",
       accent: "#ff9800",
-      hoverBg: isDarkMode ? "#333333" : "#e0e0e0",
-      inputBg: isDarkMode ? "#222222" : "#f5f5f5",
-      inputBorder: isDarkMode ? "#444444" : "#cccccc",
-      inputColor: "#000000",
-      buttonBg: isDarkMode ? "#444444" : "#e0e0e0",
-      buttonColor: "#000000",
+      hoverBg: isDarkMode ? "#555555" : "#dcdcdc",
+      inputBg: isDarkMode ? "#252525" : "#f8f8f8",
+      inputBorder: isDarkMode ? "#666666" : "#cccccc",
+      inputColor: isDarkMode ? "#ffffff" : "#000000",
+
+      // ✅ **Tamamen Yenilenen Buton Renkleri**
+      buttonBg: isDarkMode ? "#ff4500" : "#0044cc", // Karanlık modda turuncu-kırmızı, açık modda koyu mavi
+      buttonColor: isDarkMode ? "#ffffff" : "#ffffff", // Her iki modda da beyaz yazı
+      buttonHoverBg: isDarkMode ? "#ff2200" : "#0033aa", // Hover efekti için daha koyu ton
     },
     fonts: {
       base: "'Roboto', sans-serif",
@@ -98,6 +104,8 @@ const admin = new AdminJS({
                   }
                 }
 
+                
+
                 return {
                   message: `${updatedProducts.length} ürün başarıyla güncellendi!`,
                   status: "success",
@@ -117,11 +125,12 @@ const admin = new AdminJS({
       resource: StockTransaction,
       options: { parent: { name: "Stok Hareketleri" } },
     },
+
     {
       resource: Notification,
       options: {
         parent: { name: "Bildirimler" },
-        listProperties: ["message", "type", "createdAt"], // 🔹 "isRead" olmadan deneyelim
+        listProperties: ["message", "type", "createdAt"],
         showProperties: ["message", "type", "createdAt"],
         actions: {
           new: { isAccessible: false },
@@ -130,7 +139,7 @@ const admin = new AdminJS({
         },
       },
     },
-    
+
     {
       resource: User,
       options: {
@@ -154,29 +163,40 @@ const admin = new AdminJS({
       },
     },
     {
-      resource: Order, // 🛒 Sipariş Yönetimi
+      resource: Order,
       options: {
         parent: { name: "Sipariş Yönetimi" },
         listProperties: ["customerName", "customerPhone", "totalPrice", "status", "createdAt"],
-        editProperties: ["status"],
-        showProperties: [
-          "customerName",
-          "customerEmail",
-          "customerPhone",
-          "customerAddress",
-          "totalPrice",
-          "status",
-          "createdAt"
-        ],
         actions: {
           edit: { isAccessible: true },
           delete: { isAccessible: false },
           new: { isAccessible: true },
-        },
-      },
+          sendReport: {
+            actionType: "resource",
+            label: "Sipariş Raporunu E-Posta Gönder",
+            icon: "Send",
+            component: false,
+            handler: async (request, response, context) => {
+              try {
+                const reportBuffer = await generateOrderReport();
+                await sendOrderReport("yonetici@mail.com", reportBuffer);
+                return {
+                  message: "Sipariş raporu başarıyla e-posta ile gönderildi!",
+                  status: "success"
+                };
+              } catch (error) {
+                return {
+                  message: "Rapor gönderilirken hata oluştu!",
+                  status: "error"
+                };
+              }
+            }
+          }
+        }
+      }
     },
     {
-      resource: Customer, // Müşteri Yönetimi
+      resource: Customer,
       options: {
         parent: { name: "Müşteri Yönetimi" },
         listProperties: ["name", "email", "phoneNumber", "address"],
@@ -195,20 +215,9 @@ const admin = new AdminJS({
     companyName: "Stok Takip Sistemi",
     logo: "/e-takip.png",
     theme: getTheme(),
-    features: [
-      {
-        name: "darkModeToggle",
-        label: "Dark Mode",
-        action: {
-          name: "toggleDarkMode",
-          actionType: "resource",
-          handler: (req, res) => {
-            isDarkMode = !isDarkMode;
-            res.redirect("/admin");
-          },
-        },
-      },
-    ],
+    assets: {
+      styles: ["/admin-style.css"], // 📌 Dark mode CSS dosyamız yüklendi!
+    },
   },
 });
 
@@ -236,6 +245,7 @@ const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
     secret: "session-secret-key",
     store: new session.MemoryStore(),
   }
+  
 );
 
 export { admin, adminRouter };
