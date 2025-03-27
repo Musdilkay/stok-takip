@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Notification from "./Notification.js"; // Bildirim Modeli Eklendi
 
+
 const OrderSchema = new mongoose.Schema(
   {
     customerName: { type: String, required: true },

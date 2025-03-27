@@ -1,8 +1,12 @@
 import express from "express";
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
+import { createOrder } from "../controllers/orderController.js";
+
 
 const router = express.Router();
+
+router.post("/", createOrder);
 
 // 📌 1. Yeni Sipariş Oluştur
 router.post("/", async (req, res) => {
@@ -80,6 +84,10 @@ router.delete("/:id", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Sipariş silinemedi!", error: error.message });
   }
+  
+  
+
+  
 });
 
 export default router;

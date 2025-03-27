@@ -39,6 +39,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use("/orders", orderRoutes);
 
 // Her saat başı düşük stokları kontrol etme
 setInterval(checkLowStock, 3600000);

@@ -5,7 +5,7 @@ import User from "./User.js"; // Eğer böyle bir dosyan yoksa, aşağıdaki sat
 
 const StockLogSchema = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-  changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Buradaki hatayı düzelttik
+  changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, 
   oldStock: { type: Number, required: true },
   newStock: { type: Number, required: true },
   changeAmount: { type: Number, required: true },

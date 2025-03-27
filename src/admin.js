@@ -77,8 +77,6 @@ const admin = new AdminJS({
                   return { message: "Lütfen bir dosya yükleyin!", status: "error" };
                 }
 
-                
-
                 const workbook = xlsx.read(file.buffer, { type: "buffer" });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
@@ -178,9 +176,30 @@ const admin = new AdminJS({
         parent: { name: "Sipariş Yönetimi" },
         listProperties: ["customerName", "customerPhone", "totalPrice", "status", "createdAt"],
         actions: {
+          new: {
+            isAccessible: true,
+            after: async (response, request, context) => {
+              const { record } = response;
+
+              if (record && record.params.products) {
+                console.log("📦 [DEBUG] AdminJS üzerinden sipariş eklendi, stok güncelleniyor...");
+                const orderProducts = JSON.parse(record.params.products);
+
+                for (const item of orderProducts) {
+                  const product = await Product.findById(item.product);
+                  if (product) {
+                    console.log(`🔽 [DEBUG] ${product.name} stok düşülüyor. Önceki stok: ${product.stock}`);
+                    product.stock -= item.quantity;
+                    await product.save();
+                    console.log(`✅ [DEBUG] Yeni stok: ${product.stock}`);
+                  }
+                }
+              }
+              return response;
+            }
+          },
           edit: { isAccessible: true },
           delete: { isAccessible: false },
-          new: { isAccessible: true },
           sendReport: {
             actionType: "resource",
             label: "Sipariş Raporunu E-Posta Gönder",
@@ -255,21 +274,6 @@ const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
     secret: "session-secret-key",
     store: new session.MemoryStore(),
   },
-
-  
-{
-  resource: StockLog,
-  options: {
-    parent: { name: "Stok Hareketleri" },
-    listProperties: ["product", "changedBy", "oldStock", "newStock", "changeAmount", "actionType", "createdAt"],
-    showProperties: ["product", "changedBy", "oldStock", "newStock", "changeAmount", "actionType", "createdAt"],
-    actions: {
-      new: { isAccessible: false }, // Manuel eklenemez
-      edit: { isAccessible: false }, // Düzenlenemez
-      delete: { isAccessible: false }, // Silinemez
-    },
-  },
-}
 );
 
 export { admin, adminRouter };

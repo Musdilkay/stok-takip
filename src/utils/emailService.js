@@ -1,7 +1,6 @@
 import nodemailer from "nodemailer";
 
-//E-posta gönderimi için yapılandırma 
-
+// E-posta gönderimi için yapılandırma
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -10,15 +9,14 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// raporu yöneticilere e-posta ile gönderme
-
+// Raporu yöneticilere e-posta ile gönderme (Named Export)
 export const sendOrderReport = async (to, reportBuffer) => {
     try {
         const mailOptions = {
-            from : "ilkaymustafa07@gmail.com",
+            from: "ilkaymustafa07@gmail.com",
             to,
             subject: "Günlük Sipariş Raporu",
-            text: "Ekli dosyada sipariş raporunuz bulunmamaktadır",
+            text: "Ekli dosyada sipariş raporunuz bulunmaktadır",
             attachments: [
                 {
                     filename: "siparis_raporu.xlsx",
@@ -28,9 +26,9 @@ export const sendOrderReport = async (to, reportBuffer) => {
         };
         await transporter.sendMail(mailOptions);
         console.log("Rapor başarıyla gönderildi");
-        return { success: true, message: "E-posta başarıyla gönderildi."};
+        return { success: true, message: "E-posta başarıyla gönderildi." };
     } catch (error) {
         console.error("E-posta gönderme hatası:", error);
-        return { success: false, message: "E-posta gönderilemedi"};
+        return { success: false, message: "E-posta gönderilemedi" };
     }
 };
